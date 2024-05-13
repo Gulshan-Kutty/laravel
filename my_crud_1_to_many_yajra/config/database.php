@@ -16,6 +16,7 @@ return [
     */
 
     'default' => env('DB_CONNECTION', 'mysql'),
+    // 'default' => env('DB_CONNECTION', 'mongodb'),
 
     /*
     |--------------------------------------------------------------------------
@@ -62,6 +63,44 @@ return [
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
+        'mysql_second' => [
+            'driver' => 'mysql',
+            'url' => env('DATABASE_URL'),
+            'host' => env('DB_HOST_second', '127.0.0.1'),
+            'port' => env('DB_PORT_second', '3306'),
+            'database' => env('DB_DATABASE_second', 'forge'),
+            'username' => env('DB_USERNAME_second', 'forge'),
+            'password' => env('DB_PASSWORD_second', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+        'mysql_third' => [
+            'driver' => 'mysql',
+            'url' => env('DATABASE_URL'),
+            'host' => env('DB_HOST_third', '127.0.0.1'),
+            'port' => env('DB_PORT_third', '3306'),
+            'database' => env('DB_DATABASE_third', 'forge'),
+            'username' => env('DB_USERNAME_third', 'forge'),
+            'password' => env('DB_PASSWORD_third', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
 
         'pgsql' => [
             'driver' => 'pgsql',
@@ -92,6 +131,19 @@ return [
             // 'encrypt' => env('DB_ENCRYPT', 'yes'),
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
+
+        // 'mongodb' => [
+        //     'driver'   => 'mongodb',
+        //     'dsn'=>env('DB'),
+        //     'database' => env('DATABASE'),
+        //     'options'  => [
+        //        'maxPoolSize'=>20,
+        //        'w'=>'majority',
+        //     ],
+        //     'driverOptions'=>[
+        //         'serverApi'=>1,
+        //     ],
+        // ],
 
     ],
 

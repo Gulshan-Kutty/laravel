@@ -8,9 +8,12 @@ use Yajra\DataTables\Facades\Datatables; // DataTables is a jQuery plugin used f
 use App\Models\CountryMapping;
 use Excel;
 use App\Exports\ProductsExport;
-// use App\Imports\
-use App\Imports\ProductsImport;
+// use App\Imports\use App\Imports\ProductsImport;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Validator;
+use App\Models\Database2;
+use App\Models\Database3;
+
 
 
 class ProductController extends Controller
@@ -59,12 +62,13 @@ class ProductController extends Controller
         })
         ->addColumn('image', function($row){
             $image = '<img src="'.url('public/products/'.$row->image).'" class="rounded-circle" width="50" height="50">';
+            // $image = $row->image;
             return $image;
         })
         ->addColumn('action', function($row){
-            $edit = '<a href="'.route('products.edit', base64_encode($row->id)) .'" class="btn btn-info">Edit</a>';
-            $delete = '<a href="'.route('products.delete', base64_encode($row->id)) .'" class="btn btn-danger" onclick="return confirm(\'Do you really want to remove this record?\')">Delete</a>';
-            $view = '<a href="'.route('products.view', base64_encode($row->id)) .'" class="btn btn-secondary">View</a>';
+            $edit = '<a href="'.route('products.edit', base64_encode($row->id)) .'" class="btn btn-info btn-sm">Edit</a>';
+            $delete = '<a href="'.route('products.delete', base64_encode($row->id)) .'" class="btn btn-danger btn-sm" onclick="return confirm(\'Do you really want to remove this record?\')">Delete</a>';
+            $view = '<a href="'.route('products.view', base64_encode($row->id)) .'" class="btn btn-secondary btn-sm mt-1">View</a>';
             return $edit . ' ' . $delete . ' ' . $view;
         })
         ->rawColumns(['from_date', 'to_date', 'country', 'action', 'image'])
@@ -82,20 +86,31 @@ class ProductController extends Controller
     }
 
     public function store(Request $request){
-        // print_r($request->all());exit;
-                switch ($request->button) {
-                    case 'Update':
+        switch ($request->button) {
+            case 'Update':
+                // // different method
+                // $validator = Validator::make($request->all(), [
+                    //     'name' => 'required|max:255',
+                    //     // Add more validation rules as needed
+                    // ]);
+                    
+                    // // Check if validation fails
+                    // if ($validator->fails()) {
+                        //     // Redirect back with validation errors
+                        //     return redirect()->back()->withErrors($validator)->withInput();
+                        // }
+                        
                         $request->validate([
                             'name' => 'required',
                             'description' => 'required',
-                            'from_date' => 'required',
-                            'to_date' => 'required',
+                            'from_date' => 'required|date',
+                            'to_date' => 'required|date|after:from_date',
                             'gender' => 'required',
                             'status' => 'required',
-                            'country' => 'required',
+                            'multi' => 'required',
                             'image' => 'sometimes|required|mimes:jpeg,jpg,png,gif|max:10000'
                         ]);
-                                
+                        
                         // from '$request' we get form data and from '$prod' we get database data.
                         $product = Product::find($request->id); // OR // $prod = Product::where('id',$request->id)->first();
                         // print_r($product->toArray());exit;
@@ -113,19 +128,19 @@ class ProductController extends Controller
                                 $imageName = time().'.'.$request->image->extension();
                                 $request->image->move(public_path('products'),$imageName);
                                 if ($product->image) {
-                                    unlink(public_path('products/'.$prod->image));
+                                    unlink(public_path('products/'.$product->image));
                                 }
                                 $product->image = $imageName;
                             }
                             $product->updated_at = now();
                             $product->save();
                             // print_r($prod->id);exit;
-
+                            
                             $mapping = CountryMapping::where('product_id', $request->id)->delete();
                             // print_r($mapping->toArray());exit;
                             if($mapping){
                                 foreach ($request->multi as $value) {
-                                    $main = new CountryMapping();
+                                    $main = new CountryMapping;
                                     $main->product_id = $request->id; 
                                     $main->country_id = $value;
                                     // $main->created_at = now();
@@ -140,52 +155,62 @@ class ProductController extends Controller
                         }
                         break;
                 
-
-                    default:
-                        $request->validate([
-                            'name' => 'required',
-                            'description' => 'required',
-                            'from_date' => 'required',
-                            'to_date' => 'required',
-                            'gender' => 'required',
-                            'status' => 'required',
-                            'multi' => 'required',
-                            'image' => 'required|mimes:jpeg,jpg,png,gif|max:10000'
-                        ]);
-                            // print_r($request->image->extension());exit;
-
-                            $imageName = time().'.'.$request->image->extension();
-                            $request->image->move(public_path('products'),$imageName);
-
-                            $product = new Product; // use keyword 'new' only when creating new user/product.
-                            $product->name = $request->name;
-                            $product->description = $request->description;
-                            $product->from_date = date('Y-m-d', strtotime($request->from_date));
-                            $product->to_date = date('Y-m-d', strtotime($request->to_date));
-                            $product->gender = $request->gender;
-                            $product->status = $request->status;
-                            $product->image = $imageName;
-                            // $product->updated_at = now();
-
-                            $product->save();
-
-                            $product_id = $product->id; //get latest inserted product id
-
-                            // dd(print_r($request->multi));exit;
-                            foreach ($request->multi as $key => $value) {
-                                // print_r($product_id);
-                                // print_r($value);
-                                $mapping = new CountryMapping;
-                                $mapping->product_id = $product_id;
-                                $mapping->country_id = $value;
-                                // $mapping->updated_at = now();
-                                $mapping->save();
+                        
+                        default:
+                        // different method
+                        // $validator = Validator::make($request->all(), [
+                            //     'name' => 'required|max:255',
+                            //     // Add more validation rules as needed
+                            // ]);
+                            
+                            // // Check if validation fails
+                            // if ($validator->fails()) {
+                                //     // Redirect back with validation errors
+                                //     return redirect()->back()->withErrors($validator)->withInput();
+                                // }
+                                
+                            $request->validate([
+                                    'name' => 'required',
+                                    'description' => 'required',
+                                    'from_date' => 'required|date',
+                                    'to_date' => 'required|date|after:from_date',
+                                    'gender' => 'required',
+                                    'status' => 'required',
+                                    'multi' => 'required',
+                                    'image' => 'required|mimes:jpeg,jpg,png,gif|max:10000'
+                                ]);
+                                
+                                $imageName = time().'.'.$request->image->extension();
+                                $request->image->move(public_path('products'),$imageName);
+                                // print_r($request->all());exit;
+                                $product = new Product; // use keyword 'new' only when creating new user/product.
+                                $product->name = $request->name;
+                                $product->description = $request->description;
+                                $product->from_date = date('Y-m-d', strtotime($request->from_date));
+                                $product->to_date = date('Y-m-d', strtotime($request->to_date));
+                                $product->gender = $request->gender;
+                                $product->status = $request->status;
+                                $product->image = $imageName;
+                                // $product->updated_at = now();
+                                
+                                $product->save();
+                                
+                                $product_id = $product->id; //get latest inserted product id
+                                
+                                // dd(print_r($request->multi));exit;
+                                foreach ($request->multi as $key => $value) {
+                                    // print_r($product_id);
+                                    // print_r($value);
+                                    $mapping = new CountryMapping;
+                                    $mapping->product_id = $product_id;
+                                    $mapping->country_id = $value;
+                                    // $mapping->updated_at = now();
+                                    $mapping->save();
                             }
-// exit;
 
                 // toastr()->success('Success Title', 'Success Message');
-                toastr()->success('Product Created Successfully!', 'Hurray...');
-                
+                // toastr()->success('Product Created Successfully!', 'Hurray...');
+
                 // toastr()->error('Error: Something went wrong');
                 // toastr()->warning('Warning: Proceed with caution');
                 // toastr()->info('Info: Here is some information');
@@ -193,7 +218,7 @@ class ProductController extends Controller
                 // print_r($product->toArray());exit;
                 break;
         }
-        return redirect()->route('products.home');
+        return redirect()->route('products.home')->withsuccess('Product Created Successfully!');
         // return response()->json(['success' => true, 'message' => 'Product created successfully']);
 
     }
@@ -313,4 +338,15 @@ public function updateStatus(Request $request)
     return response()->json(['success' => true]);
 }
 
+
+// functions for 2nd & 3rd database connections
+public function database2(){  // direct use this link in the browser: http://localhost/laravel/my_crud_1_to_many_yajra/database2
+    $info = Database2::get();
+    print_r($info->toArray());
+}
+
+public function database3(){  // direct use this link in the browser: http://localhost/laravel/my_crud_1_to_many_yajra/database3
+    $info = Database3::get();
+    print_r($info->toArray());
+}
 }

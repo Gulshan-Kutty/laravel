@@ -16,15 +16,18 @@
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="card mt-3 p-3">
-                    <form id = 'form' action="{{route('products.store')}}" method="post" enctype="multipart/form-data">
+                    <form id='form' action="{{route('products.store')}}" method="post" enctype="multipart/form-data">
                         @csrf
                         <div class="form-group">
                             <label for="name">Name</label>
                             <input class="form-control" id="name" name="name" type="text" placeholder="Product Name" value="{{ $info->name ?? old('name')}}">
                             {{-- <span class="text-danger" id="nameError"></span> --}}
-                            @if ($errors->has('name'))
+                            {{-- @if ($errors->has('name'))
                             <span class='text-danger'>{{ $errors->first('name')}}</span>  
-                            @endif 
+                            @endif  --}}
+                            @error('name')
+                            <span class='text-danger'>{{$message}}</span>
+                            @enderror
                         </div>
                         <div class="form-group">
                             <label for="description">Description</label>
@@ -36,7 +39,7 @@
                         </div>
                         <div class="form-group">
                             <label for="from_date">From Date</label>
-                            <input class="form-control" id="from_date" name="from_date" type="text" placeholder="Select Date" value="{{ $info->from_date ?? old('from_date')}}">
+                            <input class="form-control" id="from_date" name="from_date" type="text" placeholder="Select Date" value="{{ $info->from_date ?? old('from_date')}}" autocomplete="off">
                             {{-- <span class="text-danger" id="fromError"></span> --}}
                             @if ($errors->has('from_date'))
                             <span class='text-danger'>{{ $errors->first('from_date')}}</span>  
@@ -44,7 +47,7 @@
                         </div>
                         <div class="form-group">
                             <label for="to_date">To Date</label>
-                            <input class="form-control" id="to_date" name="to_date" type="text" placeholder="Select Date" value="{{ $info->to_date ?? old('to_date')}}">
+                            <input class="form-control" id="to_date" name="to_date" type="text" placeholder="Select Date" value="{{ $info->to_date ?? old('to_date')}}"autocomplete="off">
                             {{-- <span class="text-danger" id="toError"></span> --}}
                             @if ($errors->has('to_date'))
                             <span class='text-danger'>{{ $errors->first('to_date')}}</span>  
@@ -84,20 +87,12 @@
                             <span class='text-danger'>{{ $errors->first('status')}}</span>  
                             @endif
                         </div>
-                        <div class="form-group">
-                            <label for="">Select Countries</label>
-                            {{-- <select class="dropdown col-sm-2 " style="width:200px" name="multi[]" id='multi' multiple>
-                                
-                                @foreach ($data1 as $row )
-                                <option value="{{$row->id}}">{{$row->country_name}}</option>
-                                @endforeach
-                                
-                            </select>  --}}
-                         
+                        {{-- <div class="form-group">
+                            <label for="multi">Select Countries</label>
                             <select class="dropdown col-sm-2" style="width:200px" name="multi[]" id='multi' multiple>
-                                @foreach ($data1 as $row)
+                                @foreach ($data1 as $row) --}}
                                     {{-- Check if $info is defined and if the current country is associated with the product being edited --}}
-                                    @php
+                                    {{-- @php
                                         $selected = isset($info) && in_array($row->id, $info->countries->pluck('country')->pluck('id')->toArray()) ? 'selected' : ''; //  This is a ternary operator used to determine the value of $selected. It checks if $info is set and if the current $row->id is present in the list of countries associated with $info. If the condition is true, the string 'selected' is assigned to $selected, indicating that the option should be pre-selected. Otherwise, an empty string is assigned.
                                     @endphp
                                     <option value="{{$row->id}}" {{$selected}}>{{$row->country_name}}</option>
@@ -106,11 +101,33 @@
                             @if($errors->has('multi'))
                             <span class="text-danger">{{$errors->first('multi')}}</span>
                             @endif 
-    
-                        </div>   
+                        </div> --}}
+                        <div class="form-group">
+                            <label for="multi">Select Countries</label>
+                            <select class="dropdown col-sm-2" style="width:200px" name="multi[]" id='multi' multiple>
+                                @foreach ($data1 as $row)
+                                    {{-- Check if $info is defined and if the current country is associated with the product being edited --}}
+                                    @php
+                                        $selected = isset($info) && in_array($row->id, $info->countries->pluck('country')->pluck('id')->toArray()) ? 'selected' : ''; //  This is a ternary operator used to determine the value of $selected. It checks if $info is set and if the current $row->id is present in the list of countries associated with $info. If the condition is true, the string 'selected' is assigned to $selected, indicating that the option should be pre-selected. Otherwise, an empty string is assigned.
+                                    @endphp     
+                                    @if ($selected)
+                                        <option value="{{$row->id}}" {{$selected}}>
+                                            {{$row->country_name}}
+                                        </option>
+                                    @else
+                                        <option value="{{$row->id}}" {{ in_array($row->id, old('multi', [])) ? 'selected' : '' }}>
+                                            {{$row->country_name}}
+                                        </option>                                   
+                                     @endif
+                                @endforeach
+                            </select> 
+                            @if($errors->has('multi'))
+                            <span class="text-danger">{{$errors->first('multi')}}</span>
+                            @endif 
+                        </div>
                         <div class="form-group">
                             <label for="image">Image</label>
-                            <input class='form-control' id="image" name='image' type="file">
+                            <input class='form-control' id="image" name='image' type="file" value="{{ old('image')}}">
                             {{-- <span class="text-danger" id="imageError"></span> --}}
                             @if ($errors->has('image'))
                             <span class='text-danger'>{{ $errors->first('image')}}</span><br>    
@@ -120,7 +137,9 @@
                             @endif 
                         </div>
                         <input type="hidden" name="id" value="{{ $info->id ?? '' }}">
-                        <button id='subbtn' type="submit" {{-- type="button"--}} value="{{$title}}" name="button" class="btn btn-primary">{{$title}}</button>
+                        {{-- <input type="hidden" name="button" value="{{$title}}"> --}}
+                        <button id='subbtn' type="submit" {{-- type="button" --}} value="{{$title}}" name="button" class="btn btn-primary">{{$title}}</button>
+                        <button id='subbtn' type="submit" {{-- type="button" --}} value="{{$title}}" name="button" class="btn btn-primary">{{$title}}</button>
                         <a class="btn btn-danger" href="{{route('products.home')}}">Cancel</a>
                     </form>
                 </div>
@@ -188,29 +207,37 @@
 
          });
 
-        // $('#subbtn').click(function(event){
-        //         formdata=$("#form").serialize();
-        //         // console.log(formdata);return false;
-        //         // event.preventDefault();
-        //         $.ajax({
-        //             url:"{{route('products.store')}}",
-        //             type:"POST",
-        //             data:{formdata,_token:"{{ csrf_token()}}"},
-        //             success:function(response){
-        //                 // console.log(response);return false;
-        //                 if (response.success) {
-        //                     // If the response indicates success, you can redirect the user to another page or perform any other action as needed
-        //                     window.location.href = "{{ route('products.home') }}";
-        //                 } else {
-        //                     // If the response indicates failure, display validation errors below the input fields
-        //                     $.each(response.errors, function(key, value) {
-        //                         // Find the input field with the corresponding name attribute and append the error message below it
-        //                         $('[name="' + key + '"]').siblings('.text-danger').html(value);
-        //                     });
-        //                 }
-        //             }
-        //         })
-        //         });
+        $('#subbtn').click(function(event){
+            var buttonValue = $(this).val();
+    
+            // Serialize the form data
+            var formData = $("#form").serialize();
+            
+            // Include the button value in the data object
+            formData += "&button=" + buttonValue;
+            // console.log(formData);return false;
+            // event.preventDefault();
+            
+            $.ajax({
+                url:"{{route('products.store')}}",
+                type:"POST",
+                data:formData,
+                success:function(response){
+                    window.location.href = "{{ route('products.home') }}";
+                    // console.log(response);return false;
+                    if (response.success) {
+                        // If the response indicates success, you can redirect the user to another page or perform any other action as needed
+                        window.location.href = "{{ route('products.home') }}";
+                    } else {
+                        // If the response indicates failure, display validation errors below the input fields
+                        $.each(response.errors, function(key, value) {
+                            // Find the input field with the corresponding name attribute and append the error message below it
+                            $('[name="' + key + '"]').siblings('.text-danger').html(value);
+                        });
+                    }
+                }
+            })
+        });
 
 
     </script>

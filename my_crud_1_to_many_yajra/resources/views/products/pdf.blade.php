@@ -8,29 +8,30 @@
     <title>Export</title>
 </head>
 <body>
-    <table class='table table-bordered'>
+    <table border="1px">
         <thead>
+           
             <tr>
-               <th colspan="9" align="center" style="background: #ffffb3"><b>Product Details</b></th>
+               <th colspan="6" align="center" style="background: #ffffb3; border:1px solid black"><b>Product Details</b></th>
             </tr>
-        <tr>
-            <th style="background: #ccffff"><b>Name</b></th>
-            <th style="background: #ccffff"><b>Description</b></th>
-            <th style="background: #ccffff"><b>From_date</b></th>
-            <th style="background: #ccffff"><b>To_date</b></th>
-            <th style="background: #ccffff"><b>Countries</b></th>
-            <th style="background: #ccffff"><b>Image</b></th>
-        </tr>
+            <tr>
+                <th style="border:1px solid black; background: #ccffff"><b>Name</b></th>
+                <th style="border:1px solid black; background: #ccffff"><b>Description</b></th>
+                <th style="border:1px solid black; background: #ccffff"><b>From_date</b></th>
+                <th style="border:1px solid black; background: #ccffff"><b>To_date</b></th>
+                <th style="border:1px solid black; background: #ccffff"><b>Countries</b></th>
+                <th style="border:1px solid black; background: #ccffff"><b>Image</b></th>
+            </tr>
         </thead>
         <tbody>
         @foreach($products as $product)
             <tr>
-                <td>{{ $product->name }}</td>
-                <td>{{ $product->description }}</td>
-                <td>{{ $product->from_date }}</td>
-                <td>{{ $product->to_date }}</td>
-                <td>{{ $product->countries->pluck('country.country_name')->implode(', '); }}</td>
-                <td>{{url('public/users/'.$product->image)}}</td>
+                <td style="border:1px solid black">{{ $product->name }}</td>
+                <td style="border:1px solid black">{{ $product->description }}</td>
+                <td style="border:1px solid black">{{ $product->from_date }}</td>
+                <td style="border:1px solid black">{{ $product->to_date }}</td>
+                <td style="border:1px solid black">{{ $product->countries->pluck('country.country_name')->implode(', ')}}</td>
+                <td style="border:1px solid black">{{url('public/users/'.$product->image)}}</td>
             </tr>
         @endforeach
         </tbody>

@@ -20,10 +20,21 @@
         .navbar {
             height: 80px; /* Change the height value as needed */
         }
-    
+        /* .nav-link{
+            display: inline-block;
+        }
+     */
     </style>
 </head>
 <body>
+    @php
+        print_r(Session::get('success'));
+    @endphp
+    @if ($message= Session::get('success'))
+      <div class="alert alert-success alert-block" id="successMessage">
+         <strong>{{ $message }}</strong>
+      </div>
+      @endif
     @php
         // print_r($data1->toArray());exit;
     @endphp
@@ -33,6 +44,12 @@
           <li class="nav-item">
             <a class="nav-link text-light" href="{{route('products.home')}}">Homepage</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link text-light" href="{{ route('logout') }}">Logout</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-light" href="{{route('mailForm')}}" >Send Mail</a>
+        </li>
         </ul>
       </nav>
       <div class="container">
@@ -74,7 +91,10 @@
             <button type='submit' class='btn btn-primary m-3 ml-auto ' onclick="window.location='{{ route('products.create')}}'">Create Product</button>
 
         </div>
-        
+
+        {{-- accessing global varibale we defined in .env file--}}
+        {{-- {{env('test')}}  --}}
+
         {{-- Yajra Datatable related code --}}
         <table class='table table-bordered datatable mt-4'>
             <thead>
@@ -97,8 +117,6 @@
         
     </div>
     </body>
-
- 
 
     {{-- datepicker --}}
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
@@ -130,7 +148,13 @@
                         return statusButton;
                     }
                 }
-              ]
+              ],
+
+              order:[[1, 'desc']],
+              lengthMenu: [[4,3,2,-1], ['four','three','two','All']],
+
+            // The first inner array [2,3,4,-1] defines the options available for the length menu. These are the numbers of records to display per page. -1 typically represents an option to display all records.
+            // The second inner array ['two','three','four','All'] defines the labels corresponding to the options in the first array. So, instead of showing the numbers directly in the length menu, it will display these labels. 'All' is usually used to represent the option to display all records.
             //   name corresponds to the database table column name, and it's used by DataTables for server-side processing tasks like sorting and filtering.
           });
             
@@ -211,14 +235,22 @@
                 success: function (response) {
 
                         $('.datatable').DataTable().ajax.reload();
-                },
-                error: function (xhr, textStatus, errorThrown) {
-                    console.log('Error occurred while updating status');
                 }
+       
             });
         });
 
     
         });
       </script>
+      
+    <script>
+    $(document).ready(function(){ 
+        $(".alert").fadeTo(1000, 500).slideUp(500, function(){
+            $(".alert").slideUp(600);
+            setTimeout(window.location.href = "{{route('products.home')}}", 1000);
+            });   
+    })
+    </script>
+
     </html>
