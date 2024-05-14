@@ -51,8 +51,8 @@
             <a class="nav-link text-light" href="{{route('mailForm')}}" >Send Mail</a>
         </li>
         </ul>
-      </nav>
-      <div class="container">
+    </nav>
+    <div class="container">
         <h3>Import data</h3>
         <form action="{{route('products.import')}}" method="POST" enctype="multipart/form-data" id="importForm" >
           @csrf
