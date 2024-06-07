@@ -22,7 +22,6 @@ use App\Http\Controllers\CookieController;
 //     return view('welcome');
 // });
 
-
 // product crud routes
 Route::get('/home', [ProductController::Class,'index'])->name('products.home')->middleware('islogin','preventback');
 
@@ -49,7 +48,7 @@ Route::post('products/update-status', [ProductController::class,'updatestatus'])
 
 
 // login related routes
-Route::get('/',[CustomAuthController::class,'login'])->name('login'); // if you are already loggedIn and if u try to go to login page/registration page without logging out then it will prevent it.
+Route::get('/',[CustomAuthController::class,'login'])->name('login')->middleware('islogout'); // if you are already loggedIn and if u try to go to login page/registration page without logging out then it will prevent it.
 
 Route::get('/registration',[CustomAuthController::class,'registration'])->name('registration')->middleware('islogout');
 
@@ -57,14 +56,15 @@ Route::post('/register-user',[CustomAuthController::class,'registerUser'])->name
 
 Route::post('/login-user',[CustomAuthController::class,'loginUser'])->name('loginUser');
 
-// Route::get('/dashboard',[CustomAuthController::class,'dashboard'])->name('dashboard')->middleware('islogIn','preventback');
-
 Route::get('/logout',[CustomAuthController::class,'logout'])->name('logout');
 
 
-// second & third database connectivity routes
-Route::get('/database2',[ProductController::class,'database2'])->name('database2');
-Route::get('/database3',[ProductController::class,'database3'])->name('database3');
+// // second & third database connectivity routes
+// Route::get('/database2',[ProductController::class,'database2'])->name('database2');
+// Route::get('/database3',[ProductController::class,'database3'])->name('database3');
+// require_once('routes/masters/database.php');
+// @include('routes/masters/database.php');
+@require('routes/masters/database.php');
 
 // email sending routes
 Route::get('mail-form',[MailController::class,'mailForm'])->name('mailForm');

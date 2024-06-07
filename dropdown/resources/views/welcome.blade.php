@@ -38,6 +38,7 @@
     <script>
       
             $('#country').change(function(event){  // used different approach here
+                alert('hello');
                 var idCountry = $(this).val();
                 // alert('Hello');
                 $('#state').html('');

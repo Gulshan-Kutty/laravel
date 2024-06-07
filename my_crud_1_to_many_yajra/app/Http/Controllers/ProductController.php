@@ -280,14 +280,101 @@ class ProductController extends Controller
 
     }
 
+    // public function import(Request $request){
+
+    //     $request->validate([
+    //         'file' => 'required',
+    //     ]);
+
+    //     Excel::import(new ProductsImport,$request->file('file'));
+    //     return back()->withsuccess('Data inserted successfully');
+    // }
+
     public function import(Request $request){
 
-        $request->validate([
-            'file' => 'required',
-        ]);
+        $filePath = $request->file('file')->getRealPath();
+        $data = Excel::toArray(null, $filePath)[0];
+       
+        
+        if(empty($data)){
+            return redirect()->route('products.home')->with('success', 'The file is empty');
+            }
 
-        Excel::import(new ProductsImport,$request->file('file'));
-        return back()->withsuccess('Data inserted successfully');
+        // Transpose the data array
+        $data = array_map(null, ...$data);
+        print_r($data);exit;
+        // Filter out empty columns
+        $data = array_filter($data, function($column){
+            if(is_array($column)){
+                return !empty(array_filter($column));
+            }
+        });
+
+        if(!empty($data)){
+            // Transpose the data array back
+            $data = array_map(null, ...$data);
+        }else{
+            return redirect()->route('products.home')->with('success', 'The file is empty');
+        }
+        print_r(count($data[0]));exit;
+
+
+        if(strtolower($data[0][1]) == 'country'){
+            array_shift($data);
+        }else{
+            return redirect()->route('products.home')->with('success', 'header data not formatted correctly');
+        }
+
+        $data = array_filter($data, function($row){
+            if(is_array($row)){
+                return !empty(array_filter($row));
+            }
+        });
+
+        if(empty($data)){
+            return redirect()->route('products.home')->with('success', 'No data found after the header');
+        }else{
+            
+            $user = Auth::user();
+            $skipData = 0;
+            $successCount = 0;
+
+            foreach($data as $key => $value){
+                if(isset($value[1]) && $value[1] != ''){
+                    if(preg_match('/^[a-zA-Z]+$/', $value[1])){
+                        $city = City::where('country_name', $value[1])->first();
+
+                        if(empty($city)){
+                            $create = new City;
+                            $create->city_name = ucwords($value[1]);
+                            $create->created_at = date('Y-m-d H:i:s');
+                            $create->updated_at = date('Y-m-d H:i:s');
+                            if($create->save()){
+                                $successCount++;
+                            }else{
+                                $skipData++;
+                            }
+
+                        }else{
+                            $skipData++;
+                        }
+
+                    }else{
+                        $skipData++;
+                    }
+
+                }else{
+                    $skipData++;
+                }
+            }
+        }
+
+        if($successCount > 0){
+            return redirect()->route('products.home')->withsuccess('Data imported successfully');
+        }else{
+            return redirect()->route('products.home')->withsuccess('No data imported');
+        }
+
     }
 
     public function pdf(){

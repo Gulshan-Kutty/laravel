@@ -156,6 +156,9 @@
             // The first inner array [2,3,4,-1] defines the options available for the length menu. These are the numbers of records to display per page. -1 typically represents an option to display all records.
             // The second inner array ['two','three','four','All'] defines the labels corresponding to the options in the first array. So, instead of showing the numbers directly in the length menu, it will display these labels. 'All' is usually used to represent the option to display all records.
             //   name corresponds to the database table column name, and it's used by DataTables for server-side processing tasks like sorting and filtering.
+
+            // How looping happens in yajra?
+            // In summary, the actual looping and fetching of data from the database are handled internally by the Yajra DataTables library when you call Datatables::of($data)->make(true). The library takes care of applying filters, sorting, and pagination, executing the query, and looping through the results to prepare the data for the DataTable.
           });
             
         });
