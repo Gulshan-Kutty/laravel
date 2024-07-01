@@ -30,14 +30,11 @@
     @php
         print_r(Session::get('success'));
     @endphp
-    @if ($message= Session::get('success'))
+    @if ($message = Session::get('success'))
       <div class="alert alert-success alert-block" id="successMessage">
          <strong>{{ $message }}</strong>
       </div>
-      @endif
-    @php
-        // print_r($data1->toArray());exit;
-    @endphp
+    @endif
     <nav class="navbar navbar-expand-sm bg-dark">
         <!-- Links -->
         <ul class="navbar-nav">
@@ -49,10 +46,13 @@
           </li>
           <li class="nav-item">
             <a class="nav-link text-light" href="{{route('mailForm')}}" >Send Mail</a>
-        </li>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-light" href="{{ route('bot_list')}}">Modal</a>
+          </li>
         </ul>
     </nav>
-    <div class="container">
+    <div class="container-fluid">
         <h3>Import data</h3>
         <form action="{{route('products.import')}}" method="POST" enctype="multipart/form-data" id="importForm" >
           @csrf
@@ -100,16 +100,36 @@
             <thead>
                 <tr>
                     <th>Sr.No</th>
+                    <th>Id</th>
                     <th>Name</th>
+                    <th>Email</th>
                     <th>Description</th>
                     <th>From Date</th>
                     <th>To Date</th>
                     <th>Gender</th>
                     <th>Country</th>
+                    <th>State</th>
+                    <th>City</th>
+                    <th>Hobby</th>
                     <th>Image</th>
                     <th>Action</th>
                     <th>Status</th>
                 </tr>
+                {{-- <tr>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                </tr> --}}
             </thead>
             <tbody>
             </tbody>
@@ -123,49 +143,83 @@
     
     {{-- Yajra Datatables related code --}}
     <script type="text/javascript">
-        $(function () {
-            
-          var table = $('.datatable').DataTable({
-              processing: true,
-              serverSide: true,
-              ajax: "{{ route('products.ajax_product') }}",
-              columns: [
-                  {data: 'DT_RowIndex', name: 'DT_RowIndex'},
-                  {data: 'name', name: 'name'},
-                  {data: 'description', name: 'description'},
-                  {data: 'from_date', name: 'from_date', orderable: false, searchable: false},
-                  {data: 'to_date', name: 'to_date', orderable: false, searchable: false},
-                  {data: 'gender', name: 'gender'},
-                  {data: 'country', name: 'country'},
-                  {data: 'image', name: 'image'},
-                  {data: 'action', name: 'action'},
-                  {
-                    // Create status button dynamically
-                    data: 'status',
-                    name: 'status',
-                    render: function (data, type, full, meta) {
-                        var statusButton = "<button class='btn btn-sm " + (data === 'active' ? 'btn-success' : 'btn-danger') + " status-toggle' data-product-id='" + full.id + "' data-status='" + data + "'>" + data + "</button>";
-                        return statusButton;
-                    }
-                }
-              ],
+        $(function () {    
 
-              order:[[1, 'desc']],
-              lengthMenu: [[4,3,2,-1], ['four','three','two','All']],
+            var table = $('.datatable').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: "{{ route('products.ajax_product') }}",
+                columns: [
+                    {data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false},
+                    {data: 'id', name: 'id', visible: false}, // Include id column but hide it
+                    {data: 'name', name: 'name'},
+                    {data: 'email', name: 'email'},
+                    {data: 'description', name: 'description'},
+                    {data: 'from_date', name: 'from_date', orderable: false, searchable: false},
+                    {data: 'to_date', name: 'to_date', orderable: false, searchable: false},
+                    {data: 'gender', name: 'gender'},
+                    {data: 'country', name: 'country'},
+                    {data: 'state', name: 'state'},
+                    {data: 'city', name: 'city'},
+                    {data: 'hobby', name: 'hobby'},
+                    {data: 'image', name: 'image'},
+                    {data: 'action', name: 'action'},
+                    { data: 'status', name: 'status'},
+                ],
 
-            // The first inner array [2,3,4,-1] defines the options available for the length menu. These are the numbers of records to display per page. -1 typically represents an option to display all records.
-            // The second inner array ['two','three','four','All'] defines the labels corresponding to the options in the first array. So, instead of showing the numbers directly in the length menu, it will display these labels. 'All' is usually used to represent the option to display all records.
-            //   name corresponds to the database table column name, and it's used by DataTables for server-side processing tasks like sorting and filtering.
+                //   order:[[1, 'desc']],
+                lengthMenu: [[4,3,2,-1], ['four','three','two','All']],
 
-            // How looping happens in yajra?
-            // In summary, the actual looping and fetching of data from the database are handled internally by the Yajra DataTables library when you call Datatables::of($data)->make(true). The library takes care of applying filters, sorting, and pagination, executing the query, and looping through the results to prepare the data for the DataTable.
-          });
-            
-        });
-      </script>
+                // The first inner array [2,3,4,-1] defines the options available for the length menu. These are the numbers of records to display per page. -1 typically represents an option to display all records.
+                // The second inner array ['two','three','four','All'] defines the labels corresponding to the options in the first array. So, instead of showing the numbers directly in the length menu, it will display these labels. 'All' is usually used to represent the option to display all records.
+                //   name corresponds to the database table column name, and it's used by DataTables for server-side processing tasks like sorting and filtering.
 
-      <script>
-          $(function() {
+                // How looping happens in yajra?
+                // In summary, the actual looping and fetching of data from the database are handled internally by the Yajra DataTables library when you call Datatables::of($data)->make(true). The library takes care of applying filters, sorting, and pagination, executing the query, and looping through the results to prepare the data for the DataTable.
+
+
+
+           
+
+            //     initComplete: function () {
+            //     this.api().columns().every(function () {
+            //         var column = this;
+            //         var header = $(column.header()).text().trim();
+            //         var input = $('<input type="text" placeholder="Search ' + header + '" />')
+            //             .appendTo($(column.header()).empty())
+            //             .on('keyup change', function () {
+            //                 if (column.search() !== this.value) {
+            //                     column.search(this.value).draw();
+            //                 }
+            //             });
+            //     });
+            // }
+
+
+            });
+
+            $('.datatable thead th').each(function(){
+                    var title = $(this).text();
+                    // $(this).html(title+'<input type="text" class="col-search-input" placeholder="Search ' + title + '" />');
+                    // $(this).html(title + '<input type="text" class="col-search-input form-control form-control-sm" placeholder="Search ' + title + '" onclick="event.stopPropagation();" />');
+                    $(this).html(title + '<input type="text" class="col-search-input form-control form-control-sm" placeholder="Search" onclick="event.stopPropagation();" />');
+
+                });
+                table.columns().every(function(){
+                    var table = this;
+                    $('input', this.header()).on('keyup change', function(){
+                        if(table.search() !== this.value){
+                            table.search(this.value).draw();
+                            // table.search(this.value.trim(), false, true, true).draw();
+                            
+                        }
+                    });
+                });
+            });
+    </script>
+
+    <script>
+        $(function() {
             $("#from").datepicker({
                 dateFormat: 'yy-mm-dd',
                 onSelect: function(selectedDate) {
@@ -223,37 +277,33 @@
             });
 
             // code for status update
-            $(document).on('click', '.status-toggle', function () {
-            var productId = $(this).data('product-id');
-            var newStatus = $(this).data('status') === 'active' ? 'inactive' : 'active';
+         
 
-            $.ajax({
-                url: "{{ route('products.update_status') }}",
-                type: "POST",
-                data: {
-                    productId: productId,
-                    newStatus: newStatus,
-                    _token: "{{ csrf_token() }}",
-                },
-                success: function (response) {
-
-                        $('.datatable').DataTable().ajax.reload();
-                }
-       
-            });
         });
-
-    
-        });
-      </script>
+    </script>
       
     <script>
-    $(document).ready(function(){ 
-        $(".alert").fadeTo(1000, 500).slideUp(500, function(){
-            $(".alert").slideUp(600);
-            setTimeout(window.location.href = "{{route('products.home')}}", 1000);
-            });   
-    })
+        $(document).ready(function(){ 
+            $(".alert").fadeTo(1000, 500).slideUp(500, function(){
+                $(".alert").slideUp(600);
+                setTimeout(window.location.href = "{{route('products.home')}}", 1000);
+                });   
+        })
+    </script>
+        
+    <script>
+        function statusChange(status,id){
+                var status = status;
+                var id = id;
+                $.ajax({
+                    url:"{{ route('products.update_status')}}",
+                    type:"post",
+                    data:{ status, id, _token:"{{csrf_token()}}"},
+                    success:function(result){
+                        $('.datatable').DataTable().ajax.reload();
+                    }
+                })
+            }
     </script>
 
     </html>

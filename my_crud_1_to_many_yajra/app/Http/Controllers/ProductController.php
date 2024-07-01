@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Product;
-use App\Models\Country;
+use App\Models\{Hobby,Country,State,City};
 use Yajra\DataTables\Facades\Datatables; // DataTables is a jQuery plugin used for enhancing HTML tables by adding features like pagination, sorting, and searching.
-use App\Models\CountryMapping;
+use App\Models\HobbyMapping;
 use Excel;
 use App\Exports\ProductsExport;
 // use App\Imports\use App\Imports\ProductsImport;
@@ -23,15 +23,14 @@ class ProductController extends Controller
     // $data= Product::get();
 
     // query using the relation
-    // $data = Product::with('country')->get(); // for one to one relation
-    $data = Product::with('countries')->get(); // for one to many relation
+    // $data = Product::with('hobby')->get(); // for one to one relation
+    $data = Product::with('hobbies')->get(); // for one to many relation
     // print_r($data->toArray());exit;
     // foreach ($data as $product) {
-    //     $countryNames = $product->countries->pluck('country.country_name')->implode(', ');
-    //     print_r($countryNames);
+    //     $hobbyNames = $product->hobbies->pluck('hobby.hobby_name')->implode(', ');
+    //     print_r($hobbyNames);
     // }
     // exit;
-
 
         return view('products.home', compact('data'));
     }
@@ -39,26 +38,43 @@ class ProductController extends Controller
     // Yajra Datatables related code
     public function ajax_product(){
         // $data= Product::get();
-        // $data = Product::with('country')->get();
-        $data = Product::with('countries')->get();
-        // print_r($data->toArray());exit;
+        // $data = Product::with('hobbies','country','state','city')->get();
+        $data = Product::with('hobbies', 'country', 'state', 'city')->orderBy('id', 'desc')->get();
+        // By ensuring that the server-side query orders the records as required and not specifying the order property in the DataTables initialization, you can avoid redundant ordering configuration in jQuery(in blade file-home.blade.php). 
+
         return Datatables::of($data)  // This line starts building a DataTables response using the $data variable retrieved earlier.
         ->addIndexColumn()
-        ->addColumn('from_date', function($row){ //  addColumn() is used to include an existing database column ('from_date') or adding custom column in the DataTable, and the callback function allows you to customize/modify how the data from this field is displayed.
+        ->addColumn('from_date', function($row){ //  addColumn() is a method used to enhance the DataTables' output by adding custom columns or modifying existing ones before displaying them in the DataTable.
             $test = date('d F Y',strtotime($row->from_date));
             return $test;
         })
-        ->addColumn('to_date', function($row){ //  addColumn() is used to include an existing database column ('from_date') or adding custom column in the DataTable, and the callback function allows you to customize/modify how the data from this field is displayed.
+        ->addColumn('to_date', function($row){ 
             $test = date('d F Y',strtotime($row->to_date));
             return $test;
         })
-        ->addColumn('country', function($row){
-            // $country = Country::whereIn('id',explode(',',$row->country_id))->get();
-            // $test = implode(',',array_column($country->toArray(),'country_name'));
-            // $test = $row->country->country_name; // for one to one relation
-            $test = $row->countries->pluck('country.country_name')->implode(', '); // for one to many relation
+        ->addColumn('hobby', function($row){
+            // $hobby = Hobby::whereIn('id',explode(',',$row->hobby_id))->get();
+            // $test = implode(',',array_column($hobby->toArray(),'hobby_name'));
+            // $test = $row->hobby->hobby_name; // for one to one relation
+            $test = $row->hobbies->pluck('hobby.hobby_name')->implode(', '); // for one to many relation
             return $test;
-            // In short, the $test variable is used to store the processed data retrieved from the row's 'country' relationship before returning it as the result of the addColumn() callback function. While it may not be explicitly used elsewhere in the code snippet, its presence ensures clarity and organization of the data processing logic, making the code more understandable and maintainable.The return statement then returns this processed data, which is eventually displayed in the 'country' column of the DataTable.
+            // In short, the $test variable is used to store the processed data retrieved from the row's 'hobby' relationship before returning it as the result of the addColumn() callback function. While it may not be explicitly used elsewhere in the code snippet, its presence ensures clarity and organization of the data processing logic, making the code more understandable and maintainable.The return statement then returns this processed data, which is eventually displayed in the 'hobby' column of the DataTable.
+        })
+        ->addColumn('country', function($row){ 
+            $test = $row->country->country_name;
+            return $test;
+        })
+        ->addColumn('state', function($row){ 
+            $test = $row->state->state_name;
+            return $test;
+        })
+        ->addColumn('city', function($row){ 
+            $test = $row->city->city_name;
+            return $test;
+        })
+        ->addColumn('gender', function($row){ 
+            $test = ucfirst($row->gender);
+            return $test;
         })
         ->addColumn('image', function($row){
             $image = '<img src="'.url('public/products/'.$row->image).'" class="rounded-circle" width="50" height="50">';
@@ -67,146 +83,84 @@ class ProductController extends Controller
         })
         ->addColumn('action', function($row){
             $edit = '<a href="'.route('products.edit', base64_encode($row->id)) .'" class="btn btn-info btn-sm">Edit</a>';
-            $delete = '<a href="'.route('products.delete', base64_encode($row->id)) .'" class="btn btn-danger btn-sm" onclick="return confirm(\'Do you really want to remove this record?\')">Delete</a>';
+            $delete = '<a href="'.route('products.delete', base64_encode($row->id)) .'" class="btn btn-danger btn-sm mt-1" onclick="return confirm(\'Do you really want to remove this record?\')">Delete</a>';
             $view = '<a href="'.route('products.view', base64_encode($row->id)) .'" class="btn btn-secondary btn-sm mt-1">View</a>';
             return $edit . ' ' . $delete . ' ' . $view;
         })
-        ->rawColumns(['from_date', 'to_date', 'country', 'action', 'image'])
+        ->addColumn('status', function($row){
+            if($row->status == 'active'){
+                $test = '<button class="btn btn-success status" name="status" onclick="statusChange(`'.$row->status.'`, `'.$row->id.'`)" id="status" value='.$row->status.' >'.ucfirst($row->status).'</button>';
+            }else{
+                $test = '<button class="btn btn-danger status" name="status" onclick="statusChange(`'.$row->status.'`, `'.$row->id.'`)" id="status" value='.$row->status.' >'.ucfirst($row->status).'</button>';
+            }
+            return $test;
+        })
+        ->rawColumns(['image', 'action','status'])
+        // rawColumns in Laravel DataTables is used to specify columns that contain HTML content. Including a column in rawColumns ensures that DataTables renders its content as raw HTML, allowing for buttons, images, links, or other HTML elements to be displayed and interacted with correctly in the table cells. This method helps maintain security by escaping non-HTML content by default, while enabling specific columns to display their content as intended without modification.
+
         ->make(true);
 
-        // If it's a one-to-one relationship (hasOne), the country name might be directly accessed from the related country model using $row->country->country_name.
+        // If it's a one-to-one relationship (hasOne), the hobby name might be directly accessed from the related hobby model using $row->hobby->hobby_name.
 
-        // If it's a one-to-many relationship (hasMany), you might use methods like pluck() and implode() to extract and concatenate country names from multiple related country models.
+        // If it's a one-to-many relationship (hasMany), you might use methods like pluck() and implode() to extract and concatenate hobby names from multiple related hobby models.
     }
 
     public function create(){
-        $data1 = Country::get();
-        $title = 'Create';
-        return view('products.create', compact('title','data1'));
+        $hobbies = Hobby::get();
+        $countries = Country::get();
+        // $title = 'Create';
+        return view('products.create_main', compact('hobbies','countries'));
+        // return view('products.create', compact('data1','countries','state','city','title')); // use this line when we have only one page for both create and update.
     }
 
     public function store(Request $request){
-        switch ($request->button) {
-            case 'Update':
-                // // different method
-                // $validator = Validator::make($request->all(), [
-                    //     'name' => 'required|max:255',
-                    //     // Add more validation rules as needed
-                    // ]);
-                    
-                    // // Check if validation fails
-                    // if ($validator->fails()) {
-                        //     // Redirect back with validation errors
-                        //     return redirect()->back()->withErrors($validator)->withInput();
-                        // }
-                        
-                        $request->validate([
-                            'name' => 'required',
-                            'description' => 'required',
-                            'from_date' => 'required|date',
-                            'to_date' => 'required|date|after:from_date',
-                            'gender' => 'required',
-                            'status' => 'required',
-                            'multi' => 'required',
-                            'image' => 'sometimes|required|mimes:jpeg,jpg,png,gif|max:10000'
-                        ]);
-                        
-                        // from '$request' we get form data and from '$prod' we get database data.
-                        $product = Product::find($request->id); // OR // $prod = Product::where('id',$request->id)->first();
-                        // print_r($product->toArray());exit;
-                        // print_r($request->all());exit;
-                        if ($product) {
-                            // print_r($product->image);exit;
-                            $product->name = $request->name;
-                            // $product->country_id = $request->multi;
-                            $product->description = $request->description;
-                            $product->from_date = date('Y-m-d', strtotime($request->from_date));
-                            $product->to_date = date('Y-m-d', strtotime($request->to_date));
-                            $product->gender = $request->gender;
-                            $product->status = $request->status;
-                            if ($request->hasFile('image')) {
-                                $imageName = time().'.'.$request->image->extension();
-                                $request->image->move(public_path('products'),$imageName);
-                                if ($product->image) {
-                                    unlink(public_path('products/'.$product->image));
-                                }
-                                $product->image = $imageName;
-                            }
-                            $product->updated_at = now();
-                            $product->save();
-                            // print_r($prod->id);exit;
-                            
-                            $mapping = CountryMapping::where('product_id', $request->id)->delete();
-                            // print_r($mapping->toArray());exit;
-                            if($mapping){
-                                foreach ($request->multi as $value) {
-                                    $main = new CountryMapping;
-                                    $main->product_id = $request->id; 
-                                    $main->country_id = $value;
-                                    // $main->created_at = now();
-                                    // print_r($main);exit;
-                                    $main->save();
-                                }
-                            }
-                            toastr()->success('Product Updated Successfully!', 'Hurray...');
-
-                        } else {
-                            // Handle case where product with given ID is not found
-                        }
-                        break;
+            $request->validate([
+                    'name' => 'required',
+                    'email' => 'required|unique:products',
+                    'description' => 'required',
+                    'from_date' => 'required|date',
+                    'to_date' => 'required|date|after:from_date',
+                    'gender' => 'required',
+                    'status' => 'required',
+                    'hobby' => 'required',
+                    'country' => 'required',
+                    'state' => 'required',
+                    'city' => 'required',
+                    'image' => 'required|mimes:jpeg,jpg,png,gif|max:10000'
+                    // 'image' => $request->image_base64 ? 'nullable' : 'required|image|max:2048',
+                ]);
                 
-                        
-                        default:
-                        // different method
-                        // $validator = Validator::make($request->all(), [
-                            //     'name' => 'required|max:255',
-                            //     // Add more validation rules as needed
-                            // ]);
-                            
-                            // // Check if validation fails
-                            // if ($validator->fails()) {
-                                //     // Redirect back with validation errors
-                                //     return redirect()->back()->withErrors($validator)->withInput();
-                                // }
-                                
-                            $request->validate([
-                                    'name' => 'required',
-                                    'description' => 'required',
-                                    'from_date' => 'required|date',
-                                    'to_date' => 'required|date|after:from_date',
-                                    'gender' => 'required',
-                                    'status' => 'required',
-                                    'multi' => 'required',
-                                    'image' => 'required|mimes:jpeg,jpg,png,gif|max:10000'
-                                ]);
-                                
-                                $imageName = time().'.'.$request->image->extension();
-                                $request->image->move(public_path('products'),$imageName);
-                                // print_r($request->all());exit;
-                                $product = new Product; // use keyword 'new' only when creating new user/product.
-                                $product->name = $request->name;
-                                $product->description = $request->description;
-                                $product->from_date = date('Y-m-d', strtotime($request->from_date));
-                                $product->to_date = date('Y-m-d', strtotime($request->to_date));
-                                $product->gender = $request->gender;
-                                $product->status = $request->status;
-                                $product->image = $imageName;
-                                // $product->updated_at = now();
-                                
-                                $product->save();
-                                
-                                $product_id = $product->id; //get latest inserted product id
-                                
-                                // dd(print_r($request->multi));exit;
-                                foreach ($request->multi as $key => $value) {
-                                    // print_r($product_id);
-                                    // print_r($value);
-                                    $mapping = new CountryMapping;
-                                    $mapping->product_id = $product_id;
-                                    $mapping->country_id = $value;
-                                    // $mapping->updated_at = now();
-                                    $mapping->save();
-                            }
+                $imageName = time().'.'.$request->image->extension();
+                $request->image->move(public_path('products'),$imageName);
+                // print_r($request->all());exit;
+                $product = new Product; // use keyword 'new' only when creating new user/product.
+                $product->name = $request->name;
+                $product->email = $request->email;
+                $product->description = $request->description;
+                $product->from_date = date('Y-m-d', strtotime($request->from_date));
+                $product->to_date = date('Y-m-d', strtotime($request->to_date));
+                $product->gender = $request->gender;
+                $product->country_id = $request->country;
+                $product->state_id = $request->state;
+                $product->city_id = $request->city;
+                $product->status = $request->status;
+                $product->image = $imageName;
+                // $product->updated_at = now();
+                
+                $product->save();
+                
+                $product_id = $product->id; //get latest inserted product id
+                
+                // dd(print_r($request->hobby));exit;
+                foreach ($request->hobby as $key => $value) {
+                    // print_r($product_id);
+                    // print_r($value);
+                    $mapping = new HobbyMapping;
+                    $mapping->product_id = $product_id;
+                    $mapping->hobby_id = $value;
+                    // $mapping->updated_at = now();
+                    $mapping->save();
+            }
 
                 // toastr()->success('Success Title', 'Success Message');
                 // toastr()->success('Product Created Successfully!', 'Hurray...');
@@ -216,24 +170,106 @@ class ProductController extends Controller
                 // toastr()->info('Info: Here is some information');
 
                 // print_r($product->toArray());exit;
-                break;
+            return redirect()->route('products.home')->withsuccess('Product Created Successfully!');
+        // return response()->json(['success' => true, 'message' => 'Product created successfully']);
+
+    }
+
+    
+    public function edit($id){
+        $d_id = base64_decode($id);
+        $countries = Country::get();
+        $info = Product::with('hobbies')->where('id',$d_id)->first();
+        // dd($info->toArray());
+        $states = State::where('country_id',$info->country_id)->get();
+        $cities = City::where('state_id',$info->state_id)->get();
+        $hobbies = Hobby::get();
+        $hobby_id = $info->hobbies->pluck('hobby_id')->toArray();  // this $hobby_id call in create page using hold the multiple hobbies in dropdown list
+
+        // $info = Product::where('id',$d_id)->first();
+        // $title = 'Update';
+        return view('products.update', compact('info', 'hobbies','countries','states','cities','hobby_id')); 
+        // return view('products.create', compact('info', 'data1','title')); // use this line when we have only one page for both create and update.
+
+    }
+
+    public function update(Request $request){
+        // // different method
+        // $validator = Validator::make($request->all(), [
+            //     'name' => 'required|max:255',
+            //     // Add more validation rules as needed
+            // ]);
+            
+            // // Check if validation fails
+            // if ($validator->fails()) {
+                //     // Redirect back with validation errors
+                //     return redirect()->back()->withErrors($validator)->withInput();
+                // }
+                
+        $request->validate([
+            'name' => 'required',
+            'email' => 'required|unique:products,email,' . $request->id,
+            // syntax:- 'required|unique:table_name,column_name,except_id',
+            'description' => 'required',
+            'from_date' => 'required|date',
+            'to_date' => 'required|date|after:from_date',
+            'gender' => 'required',
+            'status' => 'required',
+            'hobby' => 'required',
+            'country' => 'required',
+            'state' => 'required',
+            'city' => 'required',
+            'image' => 'sometimes|required|mimes:jpeg,jpg,png,gif|max:10000'
+        ]);
+                
+        // from '$request' we get form data and from '$prod' we get database data.
+        $product = Product::find($request->id); // OR // $prod = Product::where('id',$request->id)->first();
+        if ($product) {
+            // print_r($product->image);exit;
+            $product->name = $request->name;
+            $product->email = $request->email;
+            $product->description = $request->description;
+            $product->from_date = date('Y-m-d', strtotime($request->from_date));
+            $product->to_date = date('Y-m-d', strtotime($request->to_date));
+            $product->gender = $request->gender;
+            $product->country_id = $request->country;
+            $product->state_id = $request->state;
+            $product->city_id = $request->city;
+            $product->status = $request->status;
+            if ($request->hasFile('image')) {
+                $imageName = time().'.'.$request->image->extension();
+                $request->image->move(public_path('products'),$imageName);
+                if ($product->image) {
+                    unlink(public_path('products/'.$product->image));
+                }
+                $product->image = $imageName;
+            }
+            $product->updated_at = now();
+            $product->save();
+            // print_r($prod->id);exit;
+            
+            $mapping = HobbyMapping::where('product_id', $request->id)->delete();
+            // print_r($mapping->toArray());exit;
+            if($mapping){
+                foreach ($request->hobby as $value) {
+                    $main = new HobbyMapping;
+                    $main->product_id = $request->id; 
+                    $main->hobby_id = $value;
+                    // $main->created_at = now();
+                    // print_r($main);exit;
+                    $main->save();
+                }
+            }
+            return redirect()->route('products.home')->withsuccess('Product Updated Successfully!');
+
+        } else {
+            // Handle case where product with given ID is not found
         }
-        return redirect()->route('products.home')->withsuccess('Product Created Successfully!');
+
         // return response()->json(['success' => true, 'message' => 'Product created successfully']);
 
     }
     
-    public function edit($id){
-        $d_id = base64_decode($id);
-        // print_r($d_id);exit;
-        $title = 'Update';
-        $data1 = Country::get();
-        // $info = Product::where('id',$d_id)->first();
-        $info = Product::with('countries')->where('id',$d_id)->first();
-        // $info = Product::find($d_id);
-        // print_r($info->toArray());exit;
-        return view('products.create', compact('info', 'title', 'data1')); // here I just viewed the html page of create file but route will be of edit only.
-    }
 
     public function delete($id){
         $decoded_id = base64_decode($id);
@@ -253,8 +289,8 @@ class ProductController extends Controller
         // Delete the record from the products table.
         $info->delete();
 
-        // Delete the records from product_countries_mapping table.
-        $info1 = CountryMapping::where('product_id', $info->id)->delete();
+        // Delete the records from product_hobbies_mapping table.
+        $info1 = HobbyMapping::where('product_id', $info->id)->delete();
 
 
         return redirect()->route('products.home');
@@ -319,7 +355,7 @@ class ProductController extends Controller
         print_r(count($data[0]));exit;
 
 
-        if(strtolower($data[0][1]) == 'country'){
+        if(strtolower($data[0][1]) == 'hobby'){
             array_shift($data);
         }else{
             return redirect()->route('products.home')->with('success', 'header data not formatted correctly');
@@ -342,7 +378,7 @@ class ProductController extends Controller
             foreach($data as $key => $value){
                 if(isset($value[1]) && $value[1] != ''){
                     if(preg_match('/^[a-zA-Z]+$/', $value[1])){
-                        $city = City::where('country_name', $value[1])->first();
+                        $city = City::where('hobby_name', $value[1])->first();
 
                         if(empty($city)){
                             $create = new City;
@@ -379,7 +415,7 @@ class ProductController extends Controller
 
     public function pdf(){
         $products=[
-            'title'=>'Products data pdf',
+            'title'=>'Products data pdf',                                                                                   
             'date'=>date('m/d/Y'),
             'products'=>Product::get(),
         ];
@@ -406,23 +442,39 @@ class ProductController extends Controller
 // }
 
 
+// public function updateStatus(Request $request)
+// {
+//     // Validate the request
+//     $request->validate([
+//         'productId' => 'required|exists:products,id',
+//         'newStatus' => 'required|in:active,inactive',
+//     ]);
+
+//     // Find the product by ID
+//     $product = Product::findOrFail($request->productId);
+
+//     // Update the status
+//     $product->status = $request->newStatus;
+//     $product->save();
+
+//     // Return a success response
+//     return response()->json(['success' => true]);
+// }
+
 public function updateStatus(Request $request)
 {
-    // Validate the request
-    $request->validate([
-        'productId' => 'required|exists:products,id',
-        'newStatus' => 'required|in:active,inactive',
-    ]);
 
-    // Find the product by ID
-    $product = Product::findOrFail($request->productId);
+    if(isset($request->id)){
+        if($request->status == 'active'){
+            $status = 'inactive';
+        }else{
+            $status = 'active';
+        }
+        $model = Product::where('id',$request->id)->first();
+        $model->status = $status;
+        $model->update();
+    }
 
-    // Update the status
-    $product->status = $request->newStatus;
-    $product->save();
-
-    // Return a success response
-    return response()->json(['success' => true]);
 }
 
 
@@ -436,4 +488,15 @@ public function database3(){  // direct use this link in the browser: http://loc
     $info = Database3::get();
     print_r($info->toArray());
 }
+
+public function fetchState(Request $request){
+    $states = State::select('state_name','id')->where('country_id', $request->country_id)->orderBy('state_name','desc')->get();
+    return response()->json(['states' => $states]);
+}
+
+public function fetchCity(Request $request){
+    $cities = City::where('state_id', $request->state_id)->get(['city_name','id']);
+    return response()->json(['cities'=> $cities]);
+}
+
 }
